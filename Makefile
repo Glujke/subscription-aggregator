@@ -1,4 +1,7 @@
-.PHONY: up down logs build test-health swagger
+.PHONY: up down logs build test-health swagger test
+
+test:
+	go test ./...
 
 swagger:
 	swag init -g cmd/api/main.go -o docs --parseDependency --parseInternal

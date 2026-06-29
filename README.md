@@ -2,37 +2,63 @@
 
 REST-сервис для агрегации данных об онлайн-подписках пользователей.
 
+## Быстрый запуск
+
+Нужен [Docker](https://docs.docker.com/get-docker/).
+
+```bash
+make up
+```
+
+Откройте в браузере: **http://localhost:8080/swagger/index.html**
+
+Остановка:
+
+```bash
+make down
+```
+
+---
+
+## Требования
+
+| Инструмент | Версия |
+|------------|--------|
+| Go | 1.25+ (для локальной разработки) |
+| Docker | с поддержкой Compose v2 |
+| Make | опционально |
+
 ## Структура проекта
 
 ```
 subscription-aggregator/
-├── cmd/
-│   └── api/                 # точка входа, wiring зависимостей
+├── cmd/api/                 # точка входа
 ├── internal/
-│   ├── app/                 # сборка и запуск сервиса
+│   ├── app/                 # запуск, wiring, graceful shutdown
 │   ├── config/              # загрузка .env
-│   ├── database/            # применение миграций
-│   ├── domain/              # сущности, типы, валидация
-│   ├── handler/             # HTTP-ручки (chi)
-│   ├── repository/          # доступ к PostgreSQL (pgx)
-│   └── service/             # бизнес-логика, агрегация стоимости
-├── migrations/              # SQL-миграции (golang-migrate)
-├── docs/                    # Swagger (генерируется swag)
-├── go.mod
-└── docker-compose.yml       # postgres + migrate + api
+│   ├── database/            # golang-migrate
+│   ├── domain/              # сущности, валидация, логика дат
+│   ├── handler/             # HTTP (chi), Swagger-аннотации
+│   ├── repository/          # PostgreSQL (pgx)
+│   └── service/             # бизнес-логика, расчёт стоимости
+├── migrations/              # SQL-миграции
+├── docs/                    # сгенерированный Swagger
+├── Dockerfile
+├── docker-compose.yml
+└── Makefile
 ```
 
 ## Слои
 
 ```
 HTTP Request
-    → handler    (парсинг, статусы, swagger-аннотации)
-    → service    (правила, агрегация, валидация домена)
+    → handler    (парсинг, статусы, swagger)
+    → service    (правила, агрегация)
     → repository (SQL через pgxpool)
     → PostgreSQL
 ```
 
-## Планируемый стек
+## Стек
 
 | Компонент   | Библиотека        |
 |-------------|-------------------|
@@ -43,7 +69,57 @@ HTTP Request
 | Конфиг      | .env              |
 | Swagger     | swaggo/swag       |
 
-## API (черновик)
+## Соответствие ТЗ
+
+| Требование | Реализация |
+|------------|------------|
+| CRUDL подписок | `POST/GET/PATCH/DELETE /api/v1/subscriptions`, `GET /api/v1/subscriptions/{id}` |
+| Расчёт стоимости за период | `GET /api/v1/subscriptions/cost` |
+| PostgreSQL + миграции | `migrations/`, сервис `migrate` в docker-compose |
+| Логирование | `log/slog`, middleware запросов |
+| Конфигурация `.env` | `internal/config`, `.env.example`, переменные в compose |
+| Swagger | `/swagger/index.html` |
+| Запуск через Docker Compose | `make up` |
+
+## Бизнес-правила
+
+### Подписка
+
+- `price` — целое число рублей, > 0
+- `start_date` — формат `MM-YYYY` (строго с ведущим нулём: `07-2025`)
+- `end_date` — опционально; `null` = подписка активна
+- `id` генерирует сервер (UUID)
+- Дубликаты `(user_id, service_name)` разрешены
+- Проверка существования пользователя не выполняется
+
+### List
+
+- `limit` по умолчанию 20, максимум 100
+- `offset` — смещение
+- опциональный фильтр `user_id`
+
+### Расчёт стоимости (`/cost`)
+
+| Параметр | Обязательность | Описание |
+|----------|----------------|----------|
+| `from` | да | `MM-YYYY`, включительно |
+| `to` | нет | `MM-YYYY`; если не указан — текущий месяц |
+| `user_id` | нет | точный UUID |
+| `service_name` | нет | точное совпадение (`=`) |
+| `strategy` | нет | `overlap` (default) или `sum` |
+
+**Стратегии:**
+
+- `overlap` — сумма `price × количество месяцев пересечения` подписки с периодом
+- `sum` — сумма `price` всех подписок, пересекающих период (без умножения на месяцы)
+
+**Границы:**
+
+- Период и подписка считаются **включительно** по месяцам
+- `end_date = null` у подписки → активна до **текущего месяца**
+- Текущий месяц определяется в таймзоне **Europe/Moscow**
+
+## API
 
 | Метод    | Путь                              | Описание        |
 |----------|-----------------------------------|-----------------|
@@ -53,115 +129,15 @@ HTTP Request
 | `PATCH`  | `/api/v1/subscriptions/{id}`      | Update          |
 | `DELETE` | `/api/v1/subscriptions/{id}`      | Delete          |
 | `GET`    | `/api/v1/subscriptions/cost`      | Сумма за период |
+| `GET`    | `/health`                         | Liveness        |
 
-## База данных
+### Примеры запросов
 
-Таблица `subscriptions`:
+Сервис должен быть запущен (`make up`).
 
-| Колонка        | Тип           | Описание                                      |
-|----------------|---------------|-----------------------------------------------|
-| `id`           | UUID          | Первичный ключ, генерируется сервером         |
-| `service_name` | VARCHAR(255)  | Название сервиса                              |
-| `price`        | INTEGER       | Стоимость в рублях, > 0                       |
-| `user_id`      | UUID          | Идентификатор пользователя                    |
-| `start_date`   | DATE          | Первое число месяца начала подписки           |
-| `end_date`     | DATE          | Первое число месяца окончания, nullable       |
-| `created_at`   | TIMESTAMPTZ   | Время создания записи                         |
-| `updated_at`   | TIMESTAMPTZ   | Время последнего обновления                   |
-
-В API даты передаются как `MM-YYYY` (например, `07-2025`). В БД хранятся как `DATE`
-с первым числом месяца (`2025-07-01`).
-
-Индексы: `user_id`, `service_name`, `(start_date, end_date)`.
-
-Миграции лежат в `migrations/` и применяются через [golang-migrate](https://github.com/golang-migrate/migrate).
-
-## Конфигурация
-
-Скопируйте пример и отредактируйте под своё окружение:
+**Создать подписку:**
 
 ```bash
-cp .env.example .env
-```
-
-| Переменная        | Обязательна | По умолчанию  | Описание                          |
-|-------------------|-------------|---------------|-----------------------------------|
-| `DATABASE_URL`    | да          | —             | Строка подключения к PostgreSQL   |
-| `HTTP_ADDR`       | нет         | `:8080`       | Адрес HTTP-сервера                |
-| `LOG_LEVEL`       | нет         | `info`        | `debug`, `info`, `warn`, `error`  |
-| `MIGRATIONS_PATH` | нет         | `migrations`  | Каталог SQL-миграций              |
-
-Текущий месяц для расчётов определяется в таймзоне `Europe/Moscow` (`config.Location()`).
-
-## Тестирование
-
-### Доменный слой
-
-```bash
-go test ./internal/domain/...
-```
-
-### Конфигурация
-
-```bash
-go test ./internal/config/...
-```
-
-### HTTP-слой
-
-```bash
-go test ./internal/handler/...
-```
-
-### Сервисный слой
-
-```bash
-go test ./internal/service/...
-```
-
-### Репозиторий (нужен запущенный Docker)
-
-CRUDL, фильтры и маппинг дат — через testcontainers.
-
-```bash
-go test ./internal/repository/... -v
-```
-
-### Миграции (нужен запущенный Docker)
-
-Поднимает PostgreSQL в testcontainers, применяет `up`, делает smoke `INSERT`,
-откатывает `down` и проверяет, что таблица удалена.
-
-```bash
-go test ./internal/database/... -v
-```
-
-### Приложение
-
-```bash
-go test ./internal/app/...
-```
-
-### Все тесты
-
-```bash
-go test ./...
-```
-
-## Запуск
-
-### Docker (рекомендуется)
-
-```bash
-make up
-# или
-docker compose up --build -d
-```
-
-Проверка:
-
-```bash
-make test-health
 curl -X POST http://localhost:8080/api/v1/subscriptions \
   -H 'Content-Type: application/json' \
   -d '{
@@ -172,35 +148,122 @@ curl -X POST http://localhost:8080/api/v1/subscriptions \
   }'
 ```
 
-Остановка:
+**Список подписок:**
 
 ```bash
-make down
+curl "http://localhost:8080/api/v1/subscriptions?user_id=60601fee-2bf1-4721-ae6f-7636e79a0cba&limit=20&offset=0"
 ```
 
-### Swagger
-
-После `make up` документация доступна по адресу:
-
-```
-http://localhost:8080/swagger/index.html
-```
-
-Перегенерация (после изменения аннотаций):
+**Получить по ID** (подставьте `id` из ответа создания):
 
 ```bash
-make swagger
+curl http://localhost:8080/api/v1/subscriptions/{id}
 ```
 
-Сервисы: `postgres` → `migrate` (one-shot) → `api`. Переменные окружения заданы в `docker-compose.yml`.
+**Обновить (PATCH):**
 
-### Локально (нужен PostgreSQL)
+```bash
+curl -X PATCH http://localhost:8080/api/v1/subscriptions/{id} \
+  -H 'Content-Type: application/json' \
+  -d '{"price": 500}'
+```
+
+**Удалить:**
+
+```bash
+curl -X DELETE http://localhost:8080/api/v1/subscriptions/{id}
+```
+
+**Стоимость (overlap, по умолчанию):**
+
+```bash
+curl "http://localhost:8080/api/v1/subscriptions/cost?from=01-2025&user_id=60601fee-2bf1-4721-ae6f-7636e79a0cba"
+```
+
+**Стоимость (sum):**
+
+```bash
+curl "http://localhost:8080/api/v1/subscriptions/cost?from=01-2025&to=12-2025&strategy=sum&service_name=Yandex%20Plus"
+```
+
+## База данных
+
+Таблица `subscriptions`:
+
+| Колонка        | Тип           | Описание                                |
+|----------------|---------------|-----------------------------------------|
+| `id`           | UUID          | Первичный ключ                          |
+| `service_name` | VARCHAR(255)  | Название сервиса                        |
+| `price`        | INTEGER       | Стоимость в рублях, > 0                 |
+| `user_id`      | UUID          | Идентификатор пользователя              |
+| `start_date`   | DATE          | Первое число месяца начала              |
+| `end_date`     | DATE          | Первое число месяца окончания, nullable |
+| `created_at`   | TIMESTAMPTZ   | Время создания                          |
+| `updated_at`   | TIMESTAMPTZ   | Время обновления                        |
+
+В API даты — `MM-YYYY`, в БД — `DATE` с первым числом месяца (`2025-07-01`).
+
+## Конфигурация
+
+Для локального запуска без Docker:
+
+```bash
+cp .env.example .env
+```
+
+| Переменная        | Обязательна | По умолчанию  | Описание                         |
+|-------------------|-------------|---------------|----------------------------------|
+| `DATABASE_URL`    | да          | —             | Строка подключения к PostgreSQL  |
+| `HTTP_ADDR`       | нет         | `:8080`       | Адрес HTTP-сервера               |
+| `LOG_LEVEL`       | нет         | `info`        | `debug`, `info`, `warn`, `error` |
+| `MIGRATIONS_PATH` | нет         | `migrations`  | Каталог SQL-миграций             |
+
+В Docker переменные заданы в `docker-compose.yml`.
+
+## Запуск
+
+### Docker
+
+```bash
+make up          # postgres → migrate → api
+make logs        # логи api
+make down        # остановить и удалить контейнеры
+```
+
+### Локально
 
 ```bash
 cp .env.example .env
 go run ./cmd/api
 ```
 
+### Swagger
+
+Перегенерация после изменения аннотаций:
+
 ```bash
-curl http://localhost:8080/health
+make swagger
 ```
+
+## Тестирование
+
+```bash
+make test
+```
+
+Тесты репозитория и миграций требуют запущенный Docker (testcontainers):
+
+```bash
+go test ./internal/repository/... -v
+go test ./internal/database/... -v
+```
+
+## Make-цели
+
+| Команда | Описание |
+|---------|----------|
+| `make up` | Запустить compose |
+| `make down` | Остановить compose |
+| `make logs` | Логи API |
+| `make test` | `go test ./...` |
+| `make swagger` | Перегенерировать Swagger |
