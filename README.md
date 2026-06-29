@@ -106,6 +106,14 @@ go test ./internal/domain/...
 go test ./internal/config/...
 ```
 
+### Репозиторий (нужен запущенный Docker)
+
+CRUDL, фильтры и маппинг дат — через testcontainers.
+
+```bash
+go test ./internal/repository/... -v
+```
+
 ### Миграции (нужен запущенный Docker)
 
 Поднимает PostgreSQL в testcontainers, применяет `up`, делает smoke `INSERT`,
