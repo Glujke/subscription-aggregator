@@ -376,7 +376,8 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "end_date": {
-                    "$ref": "#/definitions/subscription-aggregator_internal_domain.MonthYear"
+                    "type": "string",
+                    "example": "12-2025"
                 },
                 "price": {
                     "type": "integer"
@@ -385,7 +386,8 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "start_date": {
-                    "$ref": "#/definitions/subscription-aggregator_internal_domain.MonthYear"
+                    "type": "string",
+                    "example": "07-2025"
                 },
                 "user_id": {
                     "type": "string"
@@ -405,7 +407,8 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "end_date": {
-                    "$ref": "#/definitions/subscription-aggregator_internal_domain.MonthYear"
+                    "type": "string",
+                    "example": "12-2025"
                 },
                 "id": {
                     "type": "string"
@@ -417,7 +420,8 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "start_date": {
-                    "$ref": "#/definitions/subscription-aggregator_internal_domain.MonthYear"
+                    "type": "string",
+                    "example": "07-2025"
                 },
                 "user_id": {
                     "type": "string"
@@ -428,7 +432,8 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "end_date": {
-                    "$ref": "#/definitions/subscription-aggregator_internal_domain.MonthYear"
+                    "type": "string",
+                    "example": "12-2025"
                 },
                 "price": {
                     "type": "integer"
@@ -437,18 +442,8 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "start_date": {
-                    "$ref": "#/definitions/subscription-aggregator_internal_domain.MonthYear"
-                }
-            }
-        },
-        "subscription-aggregator_internal_domain.MonthYear": {
-            "type": "object",
-            "properties": {
-                "month": {
-                    "type": "integer"
-                },
-                "year": {
-                    "type": "integer"
+                    "type": "string",
+                    "example": "07-2025"
                 }
             }
         }

@@ -12,8 +12,8 @@ type CreateSubscriptionRequest struct {
 	ServiceName string           `json:"service_name"`
 	Price       int              `json:"price"`
 	UserID      uuid.UUID        `json:"user_id"`
-	StartDate   domain.MonthYear `json:"start_date"`
-	EndDate     *domain.MonthYear `json:"end_date,omitempty"`
+	StartDate   domain.MonthYear  `json:"start_date" swaggertype:"string" example:"07-2025"`
+	EndDate     *domain.MonthYear `json:"end_date,omitempty" swaggertype:"string" example:"12-2025"`
 }
 
 func (r CreateSubscriptionRequest) ToInput() domain.CreateSubscriptionInput {
@@ -30,8 +30,8 @@ func (r CreateSubscriptionRequest) ToInput() domain.CreateSubscriptionInput {
 type UpdateSubscriptionRequest struct {
 	ServiceName *string           `json:"service_name,omitempty"`
 	Price       *int              `json:"price,omitempty"`
-	StartDate   *domain.MonthYear `json:"start_date,omitempty"`
-	EndDate     *domain.MonthYear `json:"end_date,omitempty"`
+	StartDate   *domain.MonthYear `json:"start_date,omitempty" swaggertype:"string" example:"07-2025"`
+	EndDate     *domain.MonthYear `json:"end_date,omitempty" swaggertype:"string" example:"12-2025"`
 }
 
 func (r UpdateSubscriptionRequest) ToPatch() domain.UpdateSubscriptionPatch {
@@ -49,8 +49,8 @@ type SubscriptionResponse struct {
 	ServiceName string            `json:"service_name"`
 	Price       int               `json:"price"`
 	UserID      uuid.UUID         `json:"user_id"`
-	StartDate   domain.MonthYear  `json:"start_date"`
-	EndDate     *domain.MonthYear `json:"end_date,omitempty"`
+	StartDate   domain.MonthYear  `json:"start_date" swaggertype:"string" example:"07-2025"`
+	EndDate     *domain.MonthYear `json:"end_date,omitempty" swaggertype:"string" example:"12-2025"`
 }
 
 func NewSubscriptionResponse(sub domain.Subscription) SubscriptionResponse {

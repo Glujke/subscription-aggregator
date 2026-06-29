@@ -18,13 +18,15 @@ definitions:
   internal_handler.CreateSubscriptionRequest:
     properties:
       end_date:
-        $ref: '#/definitions/subscription-aggregator_internal_domain.MonthYear'
+        example: 12-2025
+        type: string
       price:
         type: integer
       service_name:
         type: string
       start_date:
-        $ref: '#/definitions/subscription-aggregator_internal_domain.MonthYear'
+        example: 07-2025
+        type: string
       user_id:
         type: string
     type: object
@@ -37,7 +39,8 @@ definitions:
   internal_handler.SubscriptionResponse:
     properties:
       end_date:
-        $ref: '#/definitions/subscription-aggregator_internal_domain.MonthYear'
+        example: 12-2025
+        type: string
       id:
         type: string
       price:
@@ -45,27 +48,23 @@ definitions:
       service_name:
         type: string
       start_date:
-        $ref: '#/definitions/subscription-aggregator_internal_domain.MonthYear'
+        example: 07-2025
+        type: string
       user_id:
         type: string
     type: object
   internal_handler.UpdateSubscriptionRequest:
     properties:
       end_date:
-        $ref: '#/definitions/subscription-aggregator_internal_domain.MonthYear'
+        example: 12-2025
+        type: string
       price:
         type: integer
       service_name:
         type: string
       start_date:
-        $ref: '#/definitions/subscription-aggregator_internal_domain.MonthYear'
-    type: object
-  subscription-aggregator_internal_domain.MonthYear:
-    properties:
-      month:
-        type: integer
-      year:
-        type: integer
+        example: 07-2025
+        type: string
     type: object
 host: localhost:8080
 info:
