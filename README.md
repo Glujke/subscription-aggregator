@@ -9,7 +9,7 @@ subscription-aggregator/
 ├── cmd/
 │   └── api/                 # точка входа, wiring зависимостей
 ├── internal/
-│   ├── config/              # загрузка .env / yaml
+│   ├── config/              # загрузка .env
 │   ├── database/            # применение миграций
 │   ├── domain/              # сущности, типы, валидация
 │   ├── handler/             # HTTP-ручки (chi)
@@ -39,7 +39,7 @@ HTTP Request
 | PostgreSQL  | jackc/pgx/v5      |
 | Миграции    | golang-migrate    |
 | Логи        | log/slog (stdlib) |
-| Конфиг      | .env / yaml       |
+| Конфиг      | .env              |
 | Swagger     | swaggo/swag       |
 
 ## API (черновик)
@@ -75,12 +75,35 @@ HTTP Request
 
 Миграции лежат в `migrations/` и применяются через [golang-migrate](https://github.com/golang-migrate/migrate).
 
+## Конфигурация
+
+Скопируйте пример и отредактируйте под своё окружение:
+
+```bash
+cp .env.example .env
+```
+
+| Переменная        | Обязательна | По умолчанию  | Описание                          |
+|-------------------|-------------|---------------|-----------------------------------|
+| `DATABASE_URL`    | да          | —             | Строка подключения к PostgreSQL   |
+| `HTTP_ADDR`       | нет         | `:8080`       | Адрес HTTP-сервера                |
+| `LOG_LEVEL`       | нет         | `info`        | `debug`, `info`, `warn`, `error`  |
+| `MIGRATIONS_PATH` | нет         | `migrations`  | Каталог SQL-миграций              |
+
+Текущий месяц для расчётов определяется в таймзоне `Europe/Moscow` (`config.Location()`).
+
 ## Тестирование
 
 ### Доменный слой
 
 ```bash
 go test ./internal/domain/...
+```
+
+### Конфигурация
+
+```bash
+go test ./internal/config/...
 ```
 
 ### Миграции (нужен запущенный Docker)
