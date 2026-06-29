@@ -19,7 +19,7 @@ subscription-aggregator/
 ├── migrations/              # SQL-миграции (golang-migrate)
 ├── docs/                    # Swagger (генерируется swag)
 ├── go.mod
-└── docker-compose.yml       # (позже) postgres + migrate + api
+└── docker-compose.yml       # postgres + migrate + api
 ```
 
 ## Слои
@@ -150,17 +150,43 @@ go test ./...
 
 ## Запуск
 
-Локально (нужен PostgreSQL по `DATABASE_URL` из конфига):
+### Docker (рекомендуется)
+
+```bash
+make up
+# или
+docker compose up --build -d
+```
+
+Проверка:
+
+```bash
+make test-health
+curl -X POST http://localhost:8080/api/v1/subscriptions \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "service_name": "Yandex Plus",
+    "price": 400,
+    "user_id": "60601fee-2bf1-4721-ae6f-7636e79a0cba",
+    "start_date": "07-2025"
+  }'
+```
+
+Остановка:
+
+```bash
+make down
+```
+
+Сервисы: `postgres` → `migrate` (one-shot) → `api`. Переменные окружения заданы в `docker-compose.yml`.
+
+### Локально (нужен PostgreSQL)
 
 ```bash
 cp .env.example .env
 go run ./cmd/api
 ```
 
-Сервер слушает `HTTP_ADDR` (по умолчанию `:8080`). Проверка:
-
 ```bash
 curl http://localhost:8080/health
 ```
-
-Полный запуск через Docker — в следующем этапе (`docker compose`).
