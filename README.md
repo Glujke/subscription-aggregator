@@ -9,6 +9,7 @@ subscription-aggregator/
 ├── cmd/
 │   └── api/                 # точка входа, wiring зависимостей
 ├── internal/
+│   ├── app/                 # сборка и запуск сервиса
 │   ├── config/              # загрузка .env
 │   ├── database/            # применение миграций
 │   ├── domain/              # сущности, типы, валидация
@@ -135,6 +136,12 @@ go test ./internal/repository/... -v
 go test ./internal/database/... -v
 ```
 
+### Приложение
+
+```bash
+go test ./internal/app/...
+```
+
 ### Все тесты
 
 ```bash
@@ -143,8 +150,17 @@ go test ./...
 
 ## Запуск
 
-> Скелет проекта. Реализация — в следующих шагах.
+Локально (нужен PostgreSQL по `DATABASE_URL` из конфига):
 
 ```bash
+cp .env.example .env
 go run ./cmd/api
 ```
+
+Сервер слушает `HTTP_ADDR` (по умолчанию `:8080`). Проверка:
+
+```bash
+curl http://localhost:8080/health
+```
+
+Полный запуск через Docker — в следующем этапе (`docker compose`).
