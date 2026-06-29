@@ -178,6 +178,20 @@ curl -X POST http://localhost:8080/api/v1/subscriptions \
 make down
 ```
 
+### Swagger
+
+После `make up` документация доступна по адресу:
+
+```
+http://localhost:8080/swagger/index.html
+```
+
+Перегенерация (после изменения аннотаций):
+
+```bash
+make swagger
+```
+
 Сервисы: `postgres` → `migrate` (one-shot) → `api`. Переменные окружения заданы в `docker-compose.yml`.
 
 ### Локально (нужен PostgreSQL)

@@ -7,6 +7,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	httpSwagger "github.com/swaggo/http-swagger"
+
+	_ "subscription-aggregator/docs"
 )
 
 // NewRouter собирает HTTP-маршруты API.
@@ -20,6 +23,7 @@ func NewRouter(logger *slog.Logger, svc SubscriptionService) http.Handler {
 	r.Use(slogMiddleware(logger))
 
 	r.Get("/health", Health)
+	r.Get("/swagger/*", httpSwagger.WrapHandler)
 
 	subscriptions := NewSubscriptionsHandler(svc)
 	r.Route("/api/v1/subscriptions", func(r chi.Router) {

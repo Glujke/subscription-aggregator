@@ -1,4 +1,7 @@
-.PHONY: up down logs build test-health
+.PHONY: up down logs build test-health swagger
+
+swagger:
+	swag init -g cmd/api/main.go -o docs --parseDependency --parseInternal
 
 up:
 	docker compose up --build -d

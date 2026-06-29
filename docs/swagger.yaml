@@ -1,0 +1,298 @@
+basePath: /
+definitions:
+  internal_handler.APIError:
+    properties:
+      error:
+        example: запись не найдена
+        type: string
+    type: object
+  internal_handler.CostResponse:
+    properties:
+      currency:
+        type: string
+      subscriptions_count:
+        type: integer
+      total_cost:
+        type: integer
+    type: object
+  internal_handler.CreateSubscriptionRequest:
+    properties:
+      end_date:
+        $ref: '#/definitions/subscription-aggregator_internal_domain.MonthYear'
+      price:
+        type: integer
+      service_name:
+        type: string
+      start_date:
+        $ref: '#/definitions/subscription-aggregator_internal_domain.MonthYear'
+      user_id:
+        type: string
+    type: object
+  internal_handler.HealthResponse:
+    properties:
+      status:
+        example: ok
+        type: string
+    type: object
+  internal_handler.SubscriptionResponse:
+    properties:
+      end_date:
+        $ref: '#/definitions/subscription-aggregator_internal_domain.MonthYear'
+      id:
+        type: string
+      price:
+        type: integer
+      service_name:
+        type: string
+      start_date:
+        $ref: '#/definitions/subscription-aggregator_internal_domain.MonthYear'
+      user_id:
+        type: string
+    type: object
+  internal_handler.UpdateSubscriptionRequest:
+    properties:
+      end_date:
+        $ref: '#/definitions/subscription-aggregator_internal_domain.MonthYear'
+      price:
+        type: integer
+      service_name:
+        type: string
+      start_date:
+        $ref: '#/definitions/subscription-aggregator_internal_domain.MonthYear'
+    type: object
+  subscription-aggregator_internal_domain.MonthYear:
+    properties:
+      month:
+        type: integer
+      year:
+        type: integer
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: REST-сервис агрегации данных об онлайн-подписках пользователей.
+  title: Subscription Aggregator API
+  version: "1.0"
+paths:
+  /api/v1/subscriptions:
+    get:
+      description: Возвращает список подписок с пагинацией
+      parameters:
+      - description: Фильтр по UUID пользователя
+        in: query
+        name: user_id
+        type: string
+      - description: Лимит (default 20, max 100)
+        in: query
+        name: limit
+        type: integer
+      - description: Смещение
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_handler.SubscriptionResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handler.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handler.APIError'
+      summary: Список подписок
+      tags:
+      - subscriptions
+    post:
+      consumes:
+      - application/json
+      description: Создаёт запись об онлайн-подписке
+      parameters:
+      - description: Данные подписки
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.CreateSubscriptionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_handler.SubscriptionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handler.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handler.APIError'
+      summary: Создать подписку
+      tags:
+      - subscriptions
+  /api/v1/subscriptions/{id}:
+    delete:
+      description: Удаляет запись о подписке
+      parameters:
+      - description: UUID подписки
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handler.APIError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handler.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handler.APIError'
+      summary: Удалить подписку
+      tags:
+      - subscriptions
+    get:
+      description: Возвращает подписку по идентификатору
+      parameters:
+      - description: UUID подписки
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handler.SubscriptionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handler.APIError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handler.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handler.APIError'
+      summary: Получить подписку
+      tags:
+      - subscriptions
+    patch:
+      consumes:
+      - application/json
+      description: Частичное обновление полей подписки
+      parameters:
+      - description: UUID подписки
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Поля для обновления
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.UpdateSubscriptionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handler.SubscriptionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handler.APIError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_handler.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handler.APIError'
+      summary: Обновить подписку
+      tags:
+      - subscriptions
+  /api/v1/subscriptions/cost:
+    get:
+      description: Суммарная стоимость за период с фильтрацией. strategy=overlap (default)
+        или sum
+      parameters:
+      - description: Начало периода MM-YYYY
+        in: query
+        name: from
+        required: true
+        type: string
+      - description: Конец периода MM-YYYY (default — текущий месяц)
+        in: query
+        name: to
+        type: string
+      - description: Фильтр по UUID пользователя
+        in: query
+        name: user_id
+        type: string
+      - description: Точное название сервиса
+        in: query
+        name: service_name
+        type: string
+      - default: overlap
+        description: Стратегия расчёта
+        enum:
+        - overlap
+        - sum
+        in: query
+        name: strategy
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handler.CostResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_handler.APIError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_handler.APIError'
+      summary: Рассчитать стоимость подписок
+      tags:
+      - subscriptions
+  /health:
+    get:
+      description: Возвращает статус работы сервиса
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handler.HealthResponse'
+      summary: Проверка живости
+      tags:
+      - health
+swagger: "2.0"

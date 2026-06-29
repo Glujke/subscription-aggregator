@@ -151,6 +151,17 @@ func TestHealth(t *testing.T) {
 	}
 }
 
+func TestSwaggerUI(t *testing.T) {
+	t.Parallel()
+
+	router := handler.NewRouter(slog.New(slog.NewTextHandler(io.Discard, nil)), &fakeService{})
+
+	rr := execute(t, router, http.MethodGet, "/swagger/index.html", "")
+	if rr.Code != http.StatusOK {
+		t.Fatalf("статус: получили %d", rr.Code)
+	}
+}
+
 func execute(t *testing.T, router http.Handler, method, path, body string) *httptest.ResponseRecorder {
 	t.Helper()
 

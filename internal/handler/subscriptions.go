@@ -21,6 +21,17 @@ func NewSubscriptionsHandler(svc SubscriptionService) *SubscriptionsHandler {
 	return &SubscriptionsHandler{svc: svc}
 }
 
+// Create godoc
+// @Summary      Создать подписку
+// @Description  Создаёт запись об онлайн-подписке
+// @Tags         subscriptions
+// @Accept       json
+// @Produce      json
+// @Param        body  body      CreateSubscriptionRequest  true  "Данные подписки"
+// @Success      201   {object}  SubscriptionResponse
+// @Failure      400   {object}  APIError
+// @Failure      500   {object}  APIError
+// @Router       /api/v1/subscriptions [post]
 func (h *SubscriptionsHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req CreateSubscriptionRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -37,6 +48,17 @@ func (h *SubscriptionsHandler) Create(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, NewSubscriptionResponse(sub))
 }
 
+// Get godoc
+// @Summary      Получить подписку
+// @Description  Возвращает подписку по идентификатору
+// @Tags         subscriptions
+// @Produce      json
+// @Param        id   path      string  true  "UUID подписки"
+// @Success      200  {object}  SubscriptionResponse
+// @Failure      400  {object}  APIError
+// @Failure      404  {object}  APIError
+// @Failure      500  {object}  APIError
+// @Router       /api/v1/subscriptions/{id} [get]
 func (h *SubscriptionsHandler) Get(w http.ResponseWriter, r *http.Request) {
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
@@ -53,6 +75,18 @@ func (h *SubscriptionsHandler) Get(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, NewSubscriptionResponse(sub))
 }
 
+// List godoc
+// @Summary      Список подписок
+// @Description  Возвращает список подписок с пагинацией
+// @Tags         subscriptions
+// @Produce      json
+// @Param        user_id  query     string  false  "Фильтр по UUID пользователя"
+// @Param        limit    query     int     false  "Лимит (default 20, max 100)"
+// @Param        offset   query     int     false  "Смещение"
+// @Success      200      {array}   SubscriptionResponse
+// @Failure      400      {object}  APIError
+// @Failure      500      {object}  APIError
+// @Router       /api/v1/subscriptions [get]
 func (h *SubscriptionsHandler) List(w http.ResponseWriter, r *http.Request) {
 	userID, err := parseOptionalUUIDQuery(r, "user_id")
 	if err != nil {
@@ -86,6 +120,19 @@ func (h *SubscriptionsHandler) List(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, resp)
 }
 
+// Update godoc
+// @Summary      Обновить подписку
+// @Description  Частичное обновление полей подписки
+// @Tags         subscriptions
+// @Accept       json
+// @Produce      json
+// @Param        id    path      string                     true  "UUID подписки"
+// @Param        body  body      UpdateSubscriptionRequest  true  "Поля для обновления"
+// @Success      200   {object}  SubscriptionResponse
+// @Failure      400   {object}  APIError
+// @Failure      404   {object}  APIError
+// @Failure      500   {object}  APIError
+// @Router       /api/v1/subscriptions/{id} [patch]
 func (h *SubscriptionsHandler) Update(w http.ResponseWriter, r *http.Request) {
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
@@ -108,6 +155,16 @@ func (h *SubscriptionsHandler) Update(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, NewSubscriptionResponse(sub))
 }
 
+// Delete godoc
+// @Summary      Удалить подписку
+// @Description  Удаляет запись о подписке
+// @Tags         subscriptions
+// @Param        id  path  string  true  "UUID подписки"
+// @Success      204
+// @Failure      400  {object}  APIError
+// @Failure      404  {object}  APIError
+// @Failure      500  {object}  APIError
+// @Router       /api/v1/subscriptions/{id} [delete]
 func (h *SubscriptionsHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
@@ -123,6 +180,20 @@ func (h *SubscriptionsHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// Cost godoc
+// @Summary      Рассчитать стоимость подписок
+// @Description  Суммарная стоимость за период с фильтрацией. strategy=overlap (default) или sum
+// @Tags         subscriptions
+// @Produce      json
+// @Param        from          query     string  true   "Начало периода MM-YYYY"
+// @Param        to            query     string  false  "Конец периода MM-YYYY (default — текущий месяц)"
+// @Param        user_id       query     string  false  "Фильтр по UUID пользователя"
+// @Param        service_name  query     string  false  "Точное название сервиса"
+// @Param        strategy      query     string  false  "Стратегия расчёта"  Enums(overlap, sum)  default(overlap)
+// @Success      200           {object}  CostResponse
+// @Failure      400           {object}  APIError
+// @Failure      500           {object}  APIError
+// @Router       /api/v1/subscriptions/cost [get]
 func (h *SubscriptionsHandler) Cost(w http.ResponseWriter, r *http.Request) {
 	fromRaw := r.URL.Query().Get("from")
 	if fromRaw == "" {

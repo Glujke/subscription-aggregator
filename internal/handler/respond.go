@@ -18,6 +18,16 @@ type errorResponse struct {
 	Error string `json:"error"`
 }
 
+// APIError — тело ответа при ошибке API.
+type APIError struct {
+	Error string `json:"error" example:"запись не найдена"`
+}
+
+// HealthResponse — ответ проверки живости сервиса.
+type HealthResponse struct {
+	Status string `json:"status" example:"ok"`
+}
+
 func writeJSON(w http.ResponseWriter, status int, payload any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
