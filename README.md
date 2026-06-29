@@ -106,6 +106,12 @@ go test ./internal/domain/...
 go test ./internal/config/...
 ```
 
+### Сервисный слой
+
+```bash
+go test ./internal/service/...
+```
+
 ### Репозиторий (нужен запущенный Docker)
 
 CRUDL, фильтры и маппинг дат — через testcontainers.
