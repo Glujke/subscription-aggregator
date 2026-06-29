@@ -106,6 +106,12 @@ go test ./internal/domain/...
 go test ./internal/config/...
 ```
 
+### HTTP-слой
+
+```bash
+go test ./internal/handler/...
+```
+
 ### Сервисный слой
 
 ```bash
